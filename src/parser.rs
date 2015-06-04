@@ -37,11 +37,26 @@ fn parse_settings(mut parts: str::Split<char>) -> Result<Message, String> {
     let command = try!(parts.next().ok_or("no command given to setting"));
 
     match command {
-        "timebank" => Ok(Message::Settings(SettingsValue::Timebank(try!(parts_to_u64(parts, command.to_owned()))))),
-        "time_per_move" => Ok(Message::Settings(SettingsValue::TimePerMove(try!(parts_to_u64(parts, command.to_owned()))))),
-        "max_rounds" => Ok(Message::Settings(SettingsValue::MaxRounds(try!(parts_to_u64(parts, command.to_owned()))))),
-        "starting_pick_amount" => Ok(Message::Settings(SettingsValue::StartingPickAmount(try!(parts_to_u64(parts, command.to_owned()))))),
-        "starting_armies" => Ok(Message::Settings(SettingsValue::StartingArmies(try!(parts_to_u64(parts, command.to_owned()))))),
+        "timebank" => {
+            let value = try!(parts_to_u64(parts, command.to_owned()));
+            Ok(Message::Settings(SettingsValue::Timebank(value)))
+        }
+        "time_per_move" => {
+            let value = try!(parts_to_u64(parts, command.to_owned()));
+            Ok(Message::Settings(SettingsValue::TimePerMove(value)))
+        }
+        "max_rounds" => {
+            let value = try!(parts_to_u64(parts, command.to_owned()));
+            Ok(Message::Settings(SettingsValue::MaxRounds(value)))
+        }
+        "starting_pick_amount" => {
+            let value = try!(parts_to_u64(parts, command.to_owned()));
+            Ok(Message::Settings(SettingsValue::StartingPickAmount(value)))
+        }
+        "starting_armies" => {
+            let value = try!(parts_to_u64(parts, command.to_owned()));
+            Ok(Message::Settings(SettingsValue::StartingArmies(value)))
+        }
         "starting_regions" => {
             let mut peeker = parts.peekable();
             try!(peeker.peek().ok_or("got starting_regions setting with no value"));
