@@ -5,5 +5,9 @@ authors = ["Wraithan (Chris McDonald) <xwraithanx@gmail.com>"]
 build = "build.rs"
 include = ["src/**/*", "Cargo.toml", "tests/**/*"]
 
+[dependencies]
+log = "*"
+env_logger = "*"
+
 [build-dependencies]
 glob = "*"
