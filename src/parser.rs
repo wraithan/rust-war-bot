@@ -29,7 +29,7 @@ pub fn parse(line: &'static str) -> Result<Message, String> {
         "update_map" => {
             Ok(Message::UpdateMap)
         }
-        _ => Err("unknown command".to_string())
+        _ => Err("unknown command".to_owned())
     }
 }
 
@@ -59,7 +59,7 @@ fn parse_settings(mut parts: str::Split<char>) -> Result<Message, String> {
             let raw_value = try!(parts.next().ok_or("got opponent_bot setting with no value"));
             Ok(Message::Settings(SettingsValue::OpponentBot(raw_value.to_owned())))
         }
-        _ => Err(format!("unknown setting {}", command).to_string())
+        _ => Err(format!("unknown setting {}", command).to_owned())
     }
 }
 
@@ -72,7 +72,7 @@ fn parts_to_u64(mut parts: str::Split<char>, command: String) -> Result<u64, Str
 fn blank() {
     match parse("") {
         Ok(_) => panic!("should return error because it is malformed"),
-        Err(e) => assert_eq!(e, "unknown command".to_string())
+        Err(e) => assert_eq!(e, "unknown command".to_owned())
     }
 }
 
@@ -80,7 +80,7 @@ fn blank() {
 fn setting_blank() {
     match parse("settings") {
         Ok(_) => panic!("should return error because it is malformed"),
-        Err(e) => assert_eq!(e, "no command given to setting".to_string())
+        Err(e) => assert_eq!(e, "no command given to setting".to_owned())
     }
 }
 
@@ -88,7 +88,7 @@ fn setting_blank() {
 fn setting_timebank_blank() {
     match parse("settings timebank") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got timebank setting with no value".to_string())
+        Err(e) => assert_eq!(e, "got timebank setting with no value".to_owned())
     }
 }
 
@@ -96,7 +96,7 @@ fn setting_timebank_blank() {
 fn setting_timebank_bad_value() {
     match parse("settings timebank five") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_string())
+        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
     }
 }
 
@@ -115,7 +115,7 @@ fn setting_timebank_proper() {
 fn setting_time_per_move_blank() {
     match parse("settings time_per_move") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got time_per_move setting with no value".to_string())
+        Err(e) => assert_eq!(e, "got time_per_move setting with no value".to_owned())
     }
 }
 
@@ -123,7 +123,7 @@ fn setting_time_per_move_blank() {
 fn setting_time_per_move_bad_value() {
     match parse("settings time_per_move five") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_string())
+        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
     }
 }
 
@@ -142,7 +142,7 @@ fn setting_time_per_move_proper() {
 fn setting_max_rounds_blank() {
     match parse("settings max_rounds") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got max_rounds setting with no value".to_string())
+        Err(e) => assert_eq!(e, "got max_rounds setting with no value".to_owned())
     }
 }
 
@@ -150,7 +150,7 @@ fn setting_max_rounds_blank() {
 fn setting_max_rounds_bad_value() {
     match parse("settings max_rounds five") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_string())
+        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
     }
 }
 
@@ -169,7 +169,7 @@ fn setting_max_rounds_proper() {
 fn setting_starting_pick_amount_blank() {
     match parse("settings starting_pick_amount") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got starting_pick_amount setting with no value".to_string())
+        Err(e) => assert_eq!(e, "got starting_pick_amount setting with no value".to_owned())
     }
 }
 
@@ -177,7 +177,7 @@ fn setting_starting_pick_amount_blank() {
 fn setting_starting_pick_amount_bad_value() {
     match parse("settings starting_pick_amount five") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_string())
+        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
     }
 }
 
@@ -196,7 +196,7 @@ fn setting_starting_pick_amount_proper() {
 fn setting_starting_armies_blank() {
     match parse("settings starting_armies") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got starting_armies setting with no value".to_string())
+        Err(e) => assert_eq!(e, "got starting_armies setting with no value".to_owned())
     }
 }
 
@@ -204,7 +204,7 @@ fn setting_starting_armies_blank() {
 fn setting_starting_armies_bad_value() {
     match parse("settings starting_armies five") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_string())
+        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
     }
 }
 
@@ -223,7 +223,7 @@ fn setting_starting_armies_proper() {
 fn setting_starting_regions_blank() {
     match parse("settings starting_regions") {
         Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got starting_regions setting with no value".to_string())
+        Err(e) => assert_eq!(e, "got starting_regions setting with no value".to_owned())
     }
 }
 
@@ -231,7 +231,7 @@ fn setting_starting_regions_blank() {
 fn setting_starting_regions_bad_value() {
     match parse("settings starting_regions five 50") {
         Ok(a) => panic!("got a setting back when expecting an error, {:?}", a),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_string())
+        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
     }
 }
 
@@ -250,7 +250,7 @@ fn setting_starting_regions_proper() {
 fn setting_your_bot_blank() {
     match parse("settings your_bot") {
         Ok(a) => panic!("got a setting back when expecting an error, {:?}", a),
-        Err(e) => assert_eq!(e, "got your_bot setting with no value".to_string())
+        Err(e) => assert_eq!(e, "got your_bot setting with no value".to_owned())
     }
 }
 
@@ -258,7 +258,7 @@ fn setting_your_bot_blank() {
 fn setting_your_bot_proper() {
     match parse("settings your_bot fig").unwrap() {
         Message::Settings(setting) => match setting {
-            SettingsValue::YourBot(value) => assert_eq!(value, "fig".to_string()),
+            SettingsValue::YourBot(value) => assert_eq!(value, "fig".to_owned()),
             _ => panic!("got a setting that wasn't a your_bot")
         },
         _ => panic!("didn't get a settings object")
@@ -269,7 +269,7 @@ fn setting_your_bot_proper() {
 fn setting_opponent_bot_blank() {
     match parse("settings opponent_bot") {
         Ok(a) => panic!("got a setting back when expecting an error, {:?}", a),
-        Err(e) => assert_eq!(e, "got opponent_bot setting with no value".to_string())
+        Err(e) => assert_eq!(e, "got opponent_bot setting with no value".to_owned())
     }
 }
 
@@ -277,7 +277,7 @@ fn setting_opponent_bot_blank() {
 fn setting_opponent_bot_proper() {
     match parse("settings opponent_bot fig").unwrap() {
         Message::Settings(setting) => match setting {
-            SettingsValue::OpponentBot(value) => assert_eq!(value, "fig".to_string()),
+            SettingsValue::OpponentBot(value) => assert_eq!(value, "fig".to_owned()),
             _ => panic!("got a setting that wasn't a opponent_bot")
         },
         _ => panic!("didn't get a settings object")
