@@ -1,9 +1,17 @@
+
+#[macro_use]
+pub mod errors;
+
+use parser::errors::{ErrorKind, ParseError};
 use std::str;
+
+
+pub type ParseResult<T> = Result<T, ParseError>;
 
 #[derive(Debug)]
 pub enum Message {
     Settings(SettingsValue),
-    SetupMap{name: &'static str, value: Vec<u64>},
+    SetupMap(SetupMapValue),
     PickStartingRegion{time_left: u64, ids: Vec<u64>},
     UpdateMap,
     GoPlaceArmies,
@@ -22,19 +30,26 @@ pub enum SettingsValue {
     StartingArmies(u64)
 }
 
-pub fn parse(line: &'static str) -> Result<Message, String> {
-    let mut words = line.split(' ');
+#[derive(Debug)]
+pub enum SetupMapValue {
+    SuperRegions(Vec<(u64, u64)>),
+    Regions(Vec<(u64, u64)>),
+    Neighbors(Vec<(u64, Vec<u64>)>),
+    Wastelands(Vec<u64>),
+    OpponentStartingRegions(Vec<u64>)
+}
+
+pub fn parse(line: &'static str) -> ParseResult<Message> {
+    let mut words = line.trim().split(' ');
     match words.next().unwrap() {
         "settings" => parse_settings(words),
-        "update_map" => {
-            Ok(Message::UpdateMap)
-        }
-        _ => Err("unknown command".to_owned())
+        "setup_map" => parse_setup_map(words),
+        _ => fail!((ErrorKind::UnknownCommand, "got an unknown command", line.to_owned()))
     }
 }
 
-fn parse_settings(mut parts: str::Split<char>) -> Result<Message, String> {
-    let command = try!(parts.next().ok_or("no command given to setting"));
+fn parse_settings(mut parts: str::Split<char>) -> ParseResult<Message> {
+    let command = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "Got setting without type")));
 
     match command {
         "timebank" => {
@@ -59,59 +74,78 @@ fn parse_settings(mut parts: str::Split<char>) -> Result<Message, String> {
         }
         "starting_regions" => {
             let mut peeker = parts.peekable();
-            try!(peeker.peek().ok_or("got starting_regions setting with no value"));
+            try!(peeker.peek().ok_or((ErrorKind::MalformedCommand, "Got starting_regions without any arguments")));
             let mut value = Vec::new();
             for word in peeker {
-                value.push(try!(u64::from_str_radix(word, 10).map_err(|e| e.to_string())));
+                value.push(try!(u64::from_str_radix(word, 10)));
             }
             Ok(Message::Settings(SettingsValue::StartingRegions(value)))
         }
         "your_bot" => {
-            let raw_value = try!(parts.next().ok_or("got your_bot setting with no value"));
+            let raw_value = try!(parts.next().ok_or((
+                ErrorKind::MalformedCommand,
+                "Got your_bot without an argument"
+            )));
             Ok(Message::Settings(SettingsValue::YourBot(raw_value.to_owned())))
         }
         "opponent_bot" => {
-            let raw_value = try!(parts.next().ok_or("got opponent_bot setting with no value"));
+            let raw_value = try!(parts.next().ok_or((
+                ErrorKind::MalformedCommand,
+                "Got opponent_bot without an argument"
+            )));
             Ok(Message::Settings(SettingsValue::OpponentBot(raw_value.to_owned())))
         }
-        _ => Err(format!("unknown setting {}", command).to_owned())
+        _ => fail!((ErrorKind::UnknownCommand, "got an unknown setting type", command.to_owned()))
     }
 }
 
-fn parts_to_u64(mut parts: str::Split<char>, command: String) -> Result<u64, String> {
-    let raw_value = try!(parts.next().ok_or(format!("got {} setting with no value", command)));
-    Ok(try!(u64::from_str_radix(raw_value, 10).map_err(|e| e.to_string())))
+fn parse_setup_map(mut parts: str::Split<char>) -> ParseResult<Message> {
+    let command = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "Got setup_map without type")));
+    fail!((ErrorKind::UnknownCommand, "not implemented"))
+    // match command {
+    //     "super_regions" => {
+    //     }
+    // }
+}
+
+fn parts_to_u64(mut parts: str::Split<char>, command: String) -> ParseResult<u64> {
+    let raw_value = try!(parts.next().ok_or((
+        ErrorKind::MalformedCommand,
+        "missing argument numeric argument",
+        command
+    )));
+    Ok(try!(u64::from_str_radix(raw_value, 10)))
 }
 
 #[test]
 fn blank() {
-    match parse("") {
-        Ok(_) => panic!("should return error because it is malformed"),
-        Err(e) => assert_eq!(e, "unknown command".to_owned())
+    match parse("").unwrap_err().kind() {
+        ErrorKind::UnknownCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
 #[test]
 fn setting_blank() {
-    match parse("settings") {
-        Ok(_) => panic!("should return error because it is malformed"),
-        Err(e) => assert_eq!(e, "no command given to setting".to_owned())
+    match parse("settings").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
 #[test]
 fn setting_timebank_blank() {
-    match parse("settings timebank") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got timebank setting with no value".to_owned())
+    match parse("settings timebank").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
 #[test]
 fn setting_timebank_bad_value() {
-    match parse("settings timebank five") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
+    match parse("settings timebank five").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
@@ -127,18 +161,29 @@ fn setting_timebank_proper() {
 }
 
 #[test]
+fn setting_timebank_proper_with_leading_space() {
+    match parse(" settings timebank 10000").unwrap() {
+        Message::Settings(setting) => match setting {
+            SettingsValue::Timebank(value) => assert_eq!(value, 10000),
+            _ => panic!("got a setting that wasn't a timebank")
+        },
+        _ => panic!("didn't get a settings object")
+    }
+}
+
+#[test]
 fn setting_time_per_move_blank() {
-    match parse("settings time_per_move") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got time_per_move setting with no value".to_owned())
+    match parse("settings time_per_move").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
 #[test]
 fn setting_time_per_move_bad_value() {
-    match parse("settings time_per_move five") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
+    match parse("settings time_per_move five").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
@@ -155,17 +200,17 @@ fn setting_time_per_move_proper() {
 
 #[test]
 fn setting_max_rounds_blank() {
-    match parse("settings max_rounds") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got max_rounds setting with no value".to_owned())
+    match parse("settings max_rounds").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
 #[test]
 fn setting_max_rounds_bad_value() {
-    match parse("settings max_rounds five") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
+    match parse("settings max_rounds five").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
@@ -182,17 +227,17 @@ fn setting_max_rounds_proper() {
 
 #[test]
 fn setting_starting_pick_amount_blank() {
-    match parse("settings starting_pick_amount") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got starting_pick_amount setting with no value".to_owned())
+    match parse("settings starting_pick_amount").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
 #[test]
 fn setting_starting_pick_amount_bad_value() {
-    match parse("settings starting_pick_amount five") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
+    match parse("settings starting_pick_amount five").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
@@ -209,17 +254,17 @@ fn setting_starting_pick_amount_proper() {
 
 #[test]
 fn setting_starting_armies_blank() {
-    match parse("settings starting_armies") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got starting_armies setting with no value".to_owned())
+    match parse("settings starting_armies").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
 #[test]
 fn setting_starting_armies_bad_value() {
-    match parse("settings starting_armies five") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
+    match parse("settings starting_armies five").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
@@ -236,17 +281,17 @@ fn setting_starting_armies_proper() {
 
 #[test]
 fn setting_starting_regions_blank() {
-    match parse("settings starting_regions") {
-        Ok(_) => panic!("got a setting back when expecting an error"),
-        Err(e) => assert_eq!(e, "got starting_regions setting with no value".to_owned())
+    match parse("settings starting_regions").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
 #[test]
 fn setting_starting_regions_bad_value() {
-    match parse("settings starting_regions five 50") {
-        Ok(a) => panic!("got a setting back when expecting an error, {:?}", a),
-        Err(e) => assert_eq!(e, "invalid digit found in string".to_owned())
+    match parse("settings starting_regions five 50").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
@@ -263,9 +308,9 @@ fn setting_starting_regions_proper() {
 
 #[test]
 fn setting_your_bot_blank() {
-    match parse("settings your_bot") {
-        Ok(a) => panic!("got a setting back when expecting an error, {:?}", a),
-        Err(e) => assert_eq!(e, "got your_bot setting with no value".to_owned())
+    match parse("settings your_bot").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
@@ -282,9 +327,9 @@ fn setting_your_bot_proper() {
 
 #[test]
 fn setting_opponent_bot_blank() {
-    match parse("settings opponent_bot") {
-        Ok(a) => panic!("got a setting back when expecting an error, {:?}", a),
-        Err(e) => assert_eq!(e, "got opponent_bot setting with no value".to_owned())
+    match parse("settings opponent_bot").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
     }
 }
 
