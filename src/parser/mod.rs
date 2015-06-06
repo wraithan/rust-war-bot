@@ -44,7 +44,7 @@ pub fn parse(line: &'static str) -> ParseResult<Message> {
     match words.next().unwrap() {
         "settings" => parse_settings(words),
         "setup_map" => parse_setup_map(words),
-        _ => fail!((ErrorKind::UnknownCommand, "got an unknown command", line.to_owned()))
+        _ => fail!((ErrorKind::UnknownCommand, "Got an unknown command", line.to_owned()))
     }
 }
 
@@ -101,7 +101,7 @@ fn parse_settings(mut parts: str::Split<char>) -> ParseResult<Message> {
 
 fn parse_setup_map(mut parts: str::Split<char>) -> ParseResult<Message> {
     let command = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "Got setup_map without type")));
-    fail!((ErrorKind::UnknownCommand, "not implemented"))
+    fail!((ErrorKind::UnknownCommand, "Not implemented"))
     // match command {
     //     "super_regions" => {
     //     }
@@ -111,7 +111,7 @@ fn parse_setup_map(mut parts: str::Split<char>) -> ParseResult<Message> {
 fn parts_to_u64(mut parts: str::Split<char>, command: String) -> ParseResult<u64> {
     let raw_value = try!(parts.next().ok_or((
         ErrorKind::MalformedCommand,
-        "missing argument numeric argument",
+        "Missing numeric argument",
         command
     )));
     Ok(try!(u64::from_str_radix(raw_value, 10)))
