@@ -73,12 +73,7 @@ fn parse_settings(mut parts: str::Split<char>) -> ParseResult<Message> {
             Ok(Message::Settings(SettingsValue::StartingArmies(value)))
         }
         "starting_regions" => {
-            let mut peeker = parts.peekable();
-            try!(peeker.peek().ok_or((ErrorKind::MalformedCommand, "Got starting_regions without any arguments")));
-            let mut value = Vec::new();
-            for word in peeker {
-                value.push(try!(u64::from_str_radix(word, 10)));
-            }
+            let value = try!(parts_to_u64_vector(parts));
             Ok(Message::Settings(SettingsValue::StartingRegions(value)))
         }
         "your_bot" => {
@@ -101,11 +96,51 @@ fn parse_settings(mut parts: str::Split<char>) -> ParseResult<Message> {
 
 fn parse_setup_map(mut parts: str::Split<char>) -> ParseResult<Message> {
     let command = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "Got setup_map without type")));
-    fail!((ErrorKind::UnknownCommand, "Not implemented"))
-    // match command {
-    //     "super_regions" => {
-    //     }
-    // }
+
+    match command {
+        "super_regions" => {
+            let value = try!(parts_to_pair_vector(parts));
+            Ok(Message::SetupMap(SetupMapValue::SuperRegions(value)))
+        }
+        "regions" => {
+            let value = try!(parts_to_pair_vector(parts));
+            Ok(Message::SetupMap(SetupMapValue::Regions(value)))
+        }
+        "neighbors" => {
+            let args: Vec<_> = parts.collect();
+
+            if args.len() == 0 {
+                fail!((
+                    ErrorKind::MalformedCommand,
+                    "Got setup_map neighbors without any arguments"
+                ))
+            }
+
+            let mut value = Vec::new();
+            for pair in args.chunks(2) {
+                if pair.len() < 2 {
+                    fail!((
+                        ErrorKind::MalformedCommand,
+                        "Got setup_map neighbors with an odd number of args, expecting and even amount"
+                    ))
+                }
+                value.push((
+                    try!(u64::from_str_radix(pair.get(0).unwrap(), 10)),
+                    try!(parts_to_u64_vector(pair.get(1).unwrap().split(',')))
+                ));
+            }
+            Ok(Message::SetupMap(SetupMapValue::Neighbors(value)))
+        }
+        "wastelands" => {
+            let value = try!(parts_to_u64_vector(parts));
+            Ok(Message::SetupMap(SetupMapValue::Wastelands(value)))
+        }
+        "opponent_starting_regions" => {
+            let value = try!(parts_to_u64_vector(parts));
+            Ok(Message::SetupMap(SetupMapValue::OpponentStartingRegions(value)))
+        }
+        _ => fail!((ErrorKind::UnknownCommand, "got an unknown setting type", command.to_owned()))
+    }
 }
 
 fn parts_to_u64(mut parts: str::Split<char>, command: String) -> ParseResult<u64> {
@@ -115,6 +150,43 @@ fn parts_to_u64(mut parts: str::Split<char>, command: String) -> ParseResult<u64
         command
     )));
     Ok(try!(u64::from_str_radix(raw_value, 10)))
+}
+
+fn parts_to_u64_vector(parts: str::Split<char>)  -> ParseResult<Vec<u64>> {
+    let mut peeker = parts.peekable();
+    try!(peeker.peek().ok_or((ErrorKind::MalformedCommand, "Got command without any arguments")));
+    let mut value = Vec::new();
+    for word in peeker {
+        value.push(try!(u64::from_str_radix(word, 10)));
+    }
+    Ok(value)
+}
+
+
+fn parts_to_pair_vector(parts: str::Split<char>)  -> ParseResult<Vec<(u64, u64)>> {
+    let args: Vec<_> = parts.collect();
+
+    if args.len() == 0 {
+        fail!((
+            ErrorKind::MalformedCommand,
+            "Got setup_map subcommand without any arguments"
+        ))
+    };
+
+    let mut value = Vec::new();
+    for pair in args.chunks(2) {
+        if pair.len() < 2 {
+            fail!((
+                ErrorKind::MalformedCommand,
+                "odd number of arguments to setup_map subcommand expecting an even amount"
+            ))
+        }
+        value.push((
+            try!(u64::from_str_radix(pair.get(0).unwrap(), 10)),
+            try!(u64::from_str_radix(pair.get(1).unwrap(), 10))
+        ));
+    }
+    Ok(value)
 }
 
 #[test]
@@ -341,5 +413,248 @@ fn setting_opponent_bot_proper() {
             _ => panic!("got a setting that wasn't a opponent_bot")
         },
         _ => panic!("didn't get a settings object")
+    }
+}
+
+#[test]
+fn setup_map_blank() {
+    match parse("setup_map").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_super_regions_blank() {
+    match parse("setup_map super_regions").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_super_regions_nonnumeric_id() {
+    match parse("setup_map super_regions 3 fred").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_super_regions_missing_value() {
+    match parse("setup_map super_regions 1").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_super_regions_nonnumeric_value() {
+    match parse("setup_map super_regions 3 fred").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_super_regions_proper() {
+    match parse("setup_map super_regions 1 2").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::SuperRegions(value) => assert_eq!(value, vec![(1, 2)]),
+            _ => panic!("got a setup_map value that wasn't a super region")
+        },
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn setup_map_super_regions_multiple_proper() {
+    match parse("setup_map super_regions 1 2 2 4").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::SuperRegions(value) => assert_eq!(value, vec![(1, 2), (2, 4)]),
+            _ => panic!("got a setup_map value that wasn't a super region")
+        },
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn setup_map_regions_blank() {
+    match parse("setup_map regions").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_regions_nonnumeric_id() {
+    match parse("setup_map regions 3 fred").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_regions_missing_value() {
+    match parse("setup_map regions 1").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_regions_nonnumeric_value() {
+    match parse("setup_map regions 3 fred").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_regions_proper() {
+    match parse("setup_map regions 1 2").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::Regions(value) => assert_eq!(value, vec![(1, 2)]),
+            _ => panic!("got a setup_map value that wasn't a region")
+        },
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn setup_map_regions_multiple_proper() {
+    match parse("setup_map regions 1 1 2 1").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::Regions(value) => assert_eq!(value, vec![(1, 1), (2, 1)]),
+            _ => panic!("got a setup_map value that wasn't a region")
+        },
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn setup_map_wastelands_blank() {
+    match parse("setup_map wastelands").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_wastelands_nonnumeric() {
+    match parse("setup_map wastelands 3 fred").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_wastelands_proper() {
+    match parse("setup_map wastelands 1 2").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::Wastelands(value) => assert_eq!(value, vec![1, 2]),
+            _ => panic!("got a setup_map value that wasn't a wastelands")
+        },
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn setup_map_opponent_starting_regions_blank() {
+    match parse("setup_map opponent_starting_regions").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_opponent_starting_regions_nonnumeric() {
+    match parse("setup_map opponent_starting_regions 3 fred").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_opponent_starting_regions_proper() {
+    match parse("setup_map opponent_starting_regions 1 2").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::OpponentStartingRegions(value) => assert_eq!(value, vec![1, 2]),
+            _ => panic!("got a setup_map value that wasn't a opponent_starting_regions")
+        },
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn setup_map_neighbors_blank() {
+    match parse("setup_map neighbors").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_neighbors_nonnumeric_id() {
+    match parse("setup_map neighbors fred 2,3").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_neighbors_comma_in_id() {
+    match parse("setup_map neighbors 1,2 2,3").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_neighbors_missing_value() {
+    match parse("setup_map neighbors 1").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_neighbors_nonnumeric_value() {
+    match parse("setup_map neighbors 1 foxy,3").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn setup_map_neighbors_proper() {
+    match parse("setup_map neighbors 1 2,3").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::Neighbors(value) => assert_eq!(value, vec![(1, vec![2, 3])]),
+            _ => panic!("got a setup_map value that wasn't a region")
+        },
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn setup_map_neighbors_proper_single_neighbor() {
+    match parse("setup_map neighbors 1 2").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::Neighbors(value) => assert_eq!(value, vec![(1, vec![2])]),
+            _ => panic!("got a setup_map value that wasn't a region")
+        },
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn setup_map_neighbors_multiple_proper() {
+    match parse("setup_map neighbors 1 2,3 2 4,5").unwrap() {
+        Message::SetupMap(setting) => match setting {
+            SetupMapValue::Neighbors(value) => assert_eq!(value, vec![(1, vec![2, 3]), (2, vec![4, 5])]),
+            _ => panic!("got a setup_map value that wasn't a region")
+        },
+        _ => panic!("didn't get a setup_map object")
     }
 }
