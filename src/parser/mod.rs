@@ -153,7 +153,7 @@ fn parse_setup_map(mut parts: str::Split<char>) -> ParseResult<Message> {
     }
 }
 
-fn parse_update_map(mut parts: str::Split<char>) -> ParseResult<Message> {
+fn parse_update_map(parts: str::Split<char>) -> ParseResult<Message> {
     let args: Vec<_> = parts.collect();
 
     if args.len() == 0 {
