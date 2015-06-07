@@ -45,7 +45,7 @@ pub enum OpponentMoveValue {
     AttackTransfer(String, u64, u64, u64),
 }
 
-pub fn parse(line: &'static str) -> ParseResult<Message> {
+pub fn parse(line: String) -> ParseResult<Message> {
     let mut words = line.trim().split(' ');
     match words.next().unwrap() {
         "setup_map" => parse_setup_map(words),
@@ -298,7 +298,7 @@ fn parts_to_place_armies(name: String, parts: &mut str::Split<char>) -> ParseRes
 
 #[test]
 fn blank() {
-    match parse("").unwrap_err().kind() {
+    match parse("".to_owned()).unwrap_err().kind() {
         ErrorKind::UnknownCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -306,7 +306,7 @@ fn blank() {
 
 #[test]
 fn setting_blank() {
-    match parse("settings").unwrap_err().kind() {
+    match parse("settings".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -314,7 +314,7 @@ fn setting_blank() {
 
 #[test]
 fn setting_timebank_blank() {
-    match parse("settings timebank").unwrap_err().kind() {
+    match parse("settings timebank".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -322,7 +322,7 @@ fn setting_timebank_blank() {
 
 #[test]
 fn setting_timebank_bad_value() {
-    match parse("settings timebank five").unwrap_err().kind() {
+    match parse("settings timebank five".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -330,7 +330,7 @@ fn setting_timebank_bad_value() {
 
 #[test]
 fn setting_timebank_proper() {
-    match parse("settings timebank 10000").unwrap() {
+    match parse("settings timebank 10000".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::Timebank(value) => assert_eq!(value, 10000),
             _ => panic!("got a setting that wasn't a timebank")
@@ -341,7 +341,7 @@ fn setting_timebank_proper() {
 
 #[test]
 fn setting_timebank_proper_with_leading_space() {
-    match parse(" settings timebank 10000").unwrap() {
+    match parse(" settings timebank 10000".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::Timebank(value) => assert_eq!(value, 10000),
             _ => panic!("got a setting that wasn't a timebank")
@@ -352,7 +352,7 @@ fn setting_timebank_proper_with_leading_space() {
 
 #[test]
 fn setting_time_per_move_blank() {
-    match parse("settings time_per_move").unwrap_err().kind() {
+    match parse("settings time_per_move".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -360,7 +360,7 @@ fn setting_time_per_move_blank() {
 
 #[test]
 fn setting_time_per_move_bad_value() {
-    match parse("settings time_per_move five").unwrap_err().kind() {
+    match parse("settings time_per_move five".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -368,7 +368,7 @@ fn setting_time_per_move_bad_value() {
 
 #[test]
 fn setting_time_per_move_proper() {
-    match parse("settings time_per_move 10000").unwrap() {
+    match parse("settings time_per_move 10000".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::TimePerMove(value) => assert_eq!(value, 10000),
             _ => panic!("got a setting that wasn't a time_per_move")
@@ -379,7 +379,7 @@ fn setting_time_per_move_proper() {
 
 #[test]
 fn setting_max_rounds_blank() {
-    match parse("settings max_rounds").unwrap_err().kind() {
+    match parse("settings max_rounds".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -387,7 +387,7 @@ fn setting_max_rounds_blank() {
 
 #[test]
 fn setting_max_rounds_bad_value() {
-    match parse("settings max_rounds five").unwrap_err().kind() {
+    match parse("settings max_rounds five".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -395,7 +395,7 @@ fn setting_max_rounds_bad_value() {
 
 #[test]
 fn setting_max_rounds_proper() {
-    match parse("settings max_rounds 10000").unwrap() {
+    match parse("settings max_rounds 10000".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::MaxRounds(value) => assert_eq!(value, 10000),
             _ => panic!("got a setting that wasn't a max_rounds")
@@ -406,7 +406,7 @@ fn setting_max_rounds_proper() {
 
 #[test]
 fn setting_starting_pick_amount_blank() {
-    match parse("settings starting_pick_amount").unwrap_err().kind() {
+    match parse("settings starting_pick_amount".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -414,7 +414,7 @@ fn setting_starting_pick_amount_blank() {
 
 #[test]
 fn setting_starting_pick_amount_bad_value() {
-    match parse("settings starting_pick_amount five").unwrap_err().kind() {
+    match parse("settings starting_pick_amount five".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -422,7 +422,7 @@ fn setting_starting_pick_amount_bad_value() {
 
 #[test]
 fn setting_starting_pick_amount_proper() {
-    match parse("settings starting_pick_amount 10000").unwrap() {
+    match parse("settings starting_pick_amount 10000".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::StartingPickAmount(value) => assert_eq!(value, 10000),
             _ => panic!("got a setting that wasn't a starting_pick_amount")
@@ -433,7 +433,7 @@ fn setting_starting_pick_amount_proper() {
 
 #[test]
 fn setting_starting_armies_blank() {
-    match parse("settings starting_armies").unwrap_err().kind() {
+    match parse("settings starting_armies".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -441,7 +441,7 @@ fn setting_starting_armies_blank() {
 
 #[test]
 fn setting_starting_armies_bad_value() {
-    match parse("settings starting_armies five").unwrap_err().kind() {
+    match parse("settings starting_armies five".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -449,7 +449,7 @@ fn setting_starting_armies_bad_value() {
 
 #[test]
 fn setting_starting_armies_proper() {
-    match parse("settings starting_armies 10000").unwrap() {
+    match parse("settings starting_armies 10000".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::StartingArmies(value) => assert_eq!(value, 10000),
             _ => panic!("got a setting that wasn't a starting_armies")
@@ -460,7 +460,7 @@ fn setting_starting_armies_proper() {
 
 #[test]
 fn setting_starting_regions_blank() {
-    match parse("settings starting_regions").unwrap_err().kind() {
+    match parse("settings starting_regions".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -468,7 +468,7 @@ fn setting_starting_regions_blank() {
 
 #[test]
 fn setting_starting_regions_bad_value() {
-    match parse("settings starting_regions five 50").unwrap_err().kind() {
+    match parse("settings starting_regions five 50".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -476,7 +476,7 @@ fn setting_starting_regions_bad_value() {
 
 #[test]
 fn setting_starting_regions_proper() {
-    match parse("settings starting_regions 4 7 11").unwrap() {
+    match parse("settings starting_regions 4 7 11".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::StartingRegions(value) => assert_eq!(value, vec![4, 7, 11]),
             _ => panic!("got a setting that wasn't a starting_regions")
@@ -487,7 +487,7 @@ fn setting_starting_regions_proper() {
 
 #[test]
 fn setting_your_bot_blank() {
-    match parse("settings your_bot").unwrap_err().kind() {
+    match parse("settings your_bot".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -495,7 +495,7 @@ fn setting_your_bot_blank() {
 
 #[test]
 fn setting_your_bot_proper() {
-    match parse("settings your_bot fig").unwrap() {
+    match parse("settings your_bot fig".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::YourBot(value) => assert_eq!(value, "fig".to_owned()),
             _ => panic!("got a setting that wasn't a your_bot")
@@ -506,7 +506,7 @@ fn setting_your_bot_proper() {
 
 #[test]
 fn setting_opponent_bot_blank() {
-    match parse("settings opponent_bot").unwrap_err().kind() {
+    match parse("settings opponent_bot".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -514,7 +514,7 @@ fn setting_opponent_bot_blank() {
 
 #[test]
 fn setting_opponent_bot_proper() {
-    match parse("settings opponent_bot fig").unwrap() {
+    match parse("settings opponent_bot fig".to_owned()).unwrap() {
         Message::Settings(setting) => match setting {
             SettingsValue::OpponentBot(value) => assert_eq!(value, "fig".to_owned()),
             _ => panic!("got a setting that wasn't a opponent_bot")
@@ -525,7 +525,7 @@ fn setting_opponent_bot_proper() {
 
 #[test]
 fn setup_map_blank() {
-    match parse("setup_map").unwrap_err().kind() {
+    match parse("setup_map".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -533,7 +533,7 @@ fn setup_map_blank() {
 
 #[test]
 fn setup_map_super_regions_blank() {
-    match parse("setup_map super_regions").unwrap_err().kind() {
+    match parse("setup_map super_regions".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -541,7 +541,7 @@ fn setup_map_super_regions_blank() {
 
 #[test]
 fn setup_map_super_regions_nonnumeric_id() {
-    match parse("setup_map super_regions 3 fred").unwrap_err().kind() {
+    match parse("setup_map super_regions 3 fred".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -549,7 +549,7 @@ fn setup_map_super_regions_nonnumeric_id() {
 
 #[test]
 fn setup_map_super_regions_missing_value() {
-    match parse("setup_map super_regions 1").unwrap_err().kind() {
+    match parse("setup_map super_regions 1".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -557,7 +557,7 @@ fn setup_map_super_regions_missing_value() {
 
 #[test]
 fn setup_map_super_regions_nonnumeric_value() {
-    match parse("setup_map super_regions 3 fred").unwrap_err().kind() {
+    match parse("setup_map super_regions 3 fred".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -565,7 +565,7 @@ fn setup_map_super_regions_nonnumeric_value() {
 
 #[test]
 fn setup_map_super_regions_proper() {
-    match parse("setup_map super_regions 1 2").unwrap() {
+    match parse("setup_map super_regions 1 2".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::SuperRegions(value) => assert_eq!(value, vec![(1, 2)]),
             _ => panic!("got a setup_map value that wasn't a super region")
@@ -576,7 +576,7 @@ fn setup_map_super_regions_proper() {
 
 #[test]
 fn setup_map_super_regions_multiple_proper() {
-    match parse("setup_map super_regions 1 2 2 4").unwrap() {
+    match parse("setup_map super_regions 1 2 2 4".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::SuperRegions(value) => assert_eq!(value, vec![(1, 2), (2, 4)]),
             _ => panic!("got a setup_map value that wasn't a super region")
@@ -587,7 +587,7 @@ fn setup_map_super_regions_multiple_proper() {
 
 #[test]
 fn setup_map_regions_blank() {
-    match parse("setup_map regions").unwrap_err().kind() {
+    match parse("setup_map regions".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -595,7 +595,7 @@ fn setup_map_regions_blank() {
 
 #[test]
 fn setup_map_regions_nonnumeric_id() {
-    match parse("setup_map regions 3 fred").unwrap_err().kind() {
+    match parse("setup_map regions 3 fred".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -603,7 +603,7 @@ fn setup_map_regions_nonnumeric_id() {
 
 #[test]
 fn setup_map_regions_missing_value() {
-    match parse("setup_map regions 1").unwrap_err().kind() {
+    match parse("setup_map regions 1".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -611,7 +611,7 @@ fn setup_map_regions_missing_value() {
 
 #[test]
 fn setup_map_regions_nonnumeric_value() {
-    match parse("setup_map regions 3 fred").unwrap_err().kind() {
+    match parse("setup_map regions 3 fred".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -619,7 +619,7 @@ fn setup_map_regions_nonnumeric_value() {
 
 #[test]
 fn setup_map_regions_proper() {
-    match parse("setup_map regions 1 2").unwrap() {
+    match parse("setup_map regions 1 2".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::Regions(value) => assert_eq!(value, vec![(1, 2)]),
             _ => panic!("got a setup_map value that wasn't a region")
@@ -630,7 +630,7 @@ fn setup_map_regions_proper() {
 
 #[test]
 fn setup_map_regions_multiple_proper() {
-    match parse("setup_map regions 1 1 2 1").unwrap() {
+    match parse("setup_map regions 1 1 2 1".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::Regions(value) => assert_eq!(value, vec![(1, 1), (2, 1)]),
             _ => panic!("got a setup_map value that wasn't a region")
@@ -641,7 +641,7 @@ fn setup_map_regions_multiple_proper() {
 
 #[test]
 fn setup_map_wastelands_blank() {
-    match parse("setup_map wastelands").unwrap_err().kind() {
+    match parse("setup_map wastelands".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -649,7 +649,7 @@ fn setup_map_wastelands_blank() {
 
 #[test]
 fn setup_map_wastelands_nonnumeric() {
-    match parse("setup_map wastelands 3 fred").unwrap_err().kind() {
+    match parse("setup_map wastelands 3 fred".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -657,7 +657,7 @@ fn setup_map_wastelands_nonnumeric() {
 
 #[test]
 fn setup_map_wastelands_proper() {
-    match parse("setup_map wastelands 1 2").unwrap() {
+    match parse("setup_map wastelands 1 2".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::Wastelands(value) => assert_eq!(value, vec![1, 2]),
             _ => panic!("got a setup_map value that wasn't a wastelands")
@@ -668,7 +668,7 @@ fn setup_map_wastelands_proper() {
 
 #[test]
 fn setup_map_opponent_starting_regions_blank() {
-    match parse("setup_map opponent_starting_regions").unwrap_err().kind() {
+    match parse("setup_map opponent_starting_regions".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -676,7 +676,7 @@ fn setup_map_opponent_starting_regions_blank() {
 
 #[test]
 fn setup_map_opponent_starting_regions_nonnumeric() {
-    match parse("setup_map opponent_starting_regions 3 fred").unwrap_err().kind() {
+    match parse("setup_map opponent_starting_regions 3 fred".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -684,7 +684,7 @@ fn setup_map_opponent_starting_regions_nonnumeric() {
 
 #[test]
 fn setup_map_opponent_starting_regions_proper() {
-    match parse("setup_map opponent_starting_regions 1 2").unwrap() {
+    match parse("setup_map opponent_starting_regions 1 2".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::OpponentStartingRegions(value) => assert_eq!(value, vec![1, 2]),
             _ => panic!("got a setup_map value that wasn't a opponent_starting_regions")
@@ -695,7 +695,7 @@ fn setup_map_opponent_starting_regions_proper() {
 
 #[test]
 fn setup_map_neighbors_blank() {
-    match parse("setup_map neighbors").unwrap_err().kind() {
+    match parse("setup_map neighbors".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -703,7 +703,7 @@ fn setup_map_neighbors_blank() {
 
 #[test]
 fn setup_map_neighbors_nonnumeric_id() {
-    match parse("setup_map neighbors fred 2,3").unwrap_err().kind() {
+    match parse("setup_map neighbors fred 2,3".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -711,7 +711,7 @@ fn setup_map_neighbors_nonnumeric_id() {
 
 #[test]
 fn setup_map_neighbors_comma_in_id() {
-    match parse("setup_map neighbors 1,2 2,3").unwrap_err().kind() {
+    match parse("setup_map neighbors 1,2 2,3".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -719,7 +719,7 @@ fn setup_map_neighbors_comma_in_id() {
 
 #[test]
 fn setup_map_neighbors_missing_value() {
-    match parse("setup_map neighbors 1").unwrap_err().kind() {
+    match parse("setup_map neighbors 1".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -727,7 +727,7 @@ fn setup_map_neighbors_missing_value() {
 
 #[test]
 fn setup_map_neighbors_nonnumeric_value() {
-    match parse("setup_map neighbors 1 foxy,3").unwrap_err().kind() {
+    match parse("setup_map neighbors 1 foxy,3".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -735,7 +735,7 @@ fn setup_map_neighbors_nonnumeric_value() {
 
 #[test]
 fn setup_map_neighbors_proper() {
-    match parse("setup_map neighbors 1 2,3").unwrap() {
+    match parse("setup_map neighbors 1 2,3".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::Neighbors(value) => assert_eq!(value, vec![(1, vec![2, 3])]),
             _ => panic!("got a setup_map value that wasn't a region")
@@ -746,7 +746,7 @@ fn setup_map_neighbors_proper() {
 
 #[test]
 fn setup_map_neighbors_proper_single_neighbor() {
-    match parse("setup_map neighbors 1 2").unwrap() {
+    match parse("setup_map neighbors 1 2".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::Neighbors(value) => assert_eq!(value, vec![(1, vec![2])]),
             _ => panic!("got a setup_map value that wasn't a region")
@@ -757,7 +757,7 @@ fn setup_map_neighbors_proper_single_neighbor() {
 
 #[test]
 fn setup_map_neighbors_multiple_proper() {
-    match parse("setup_map neighbors 1 2,3 2 4,5").unwrap() {
+    match parse("setup_map neighbors 1 2,3 2 4,5".to_owned()).unwrap() {
         Message::SetupMap(setting) => match setting {
             SetupMapValue::Neighbors(value) => assert_eq!(value, vec![(1, vec![2, 3]), (2, vec![4, 5])]),
             _ => panic!("got a setup_map value that wasn't a region")
@@ -768,7 +768,7 @@ fn setup_map_neighbors_multiple_proper() {
 
 #[test]
 fn go_blank() {
-    match parse("go").unwrap_err().kind() {
+    match parse("go".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -776,7 +776,7 @@ fn go_blank() {
 
 #[test]
 fn go_place_armies_blank() {
-    match parse("go place_armies").unwrap_err().kind() {
+    match parse("go place_armies".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -784,7 +784,7 @@ fn go_place_armies_blank() {
 
 #[test]
 fn go_place_armies_nonnumeric() {
-    match parse("go place_armies samwise").unwrap_err().kind() {
+    match parse("go place_armies samwise".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -792,7 +792,7 @@ fn go_place_armies_nonnumeric() {
 
 #[test]
 fn go_place_armies_proper() {
-    match parse("go place_armies 100").unwrap() {
+    match parse("go place_armies 100".to_owned()).unwrap() {
         Message::GoPlaceArmies(timebank) => assert_eq!(timebank, 100),
         _ => panic!("didn't get a setup_map object")
     }
@@ -800,7 +800,7 @@ fn go_place_armies_proper() {
 
 #[test]
 fn go_attack_transfer_blank() {
-    match parse("go attack/transfer").unwrap_err().kind() {
+    match parse("go attack/transfer".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -808,7 +808,7 @@ fn go_attack_transfer_blank() {
 
 #[test]
 fn go_attack_transfer_nonnumeric() {
-    match parse("go attack/transfer frodo").unwrap_err().kind() {
+    match parse("go attack/transfer frodo".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -816,7 +816,7 @@ fn go_attack_transfer_nonnumeric() {
 
 #[test]
 fn go_attack_transfer_proper() {
-    match parse("go attack/transfer 100").unwrap() {
+    match parse("go attack/transfer 100".to_owned()).unwrap() {
         Message::GoAttackTransfer(timebank) => assert_eq!(timebank, 100),
         _ => panic!("didn't get a setup_map object")
     }
@@ -824,7 +824,7 @@ fn go_attack_transfer_proper() {
 
 #[test]
 fn update_map_blank() {
-    match parse("update_map").unwrap_err().kind() {
+    match parse("update_map".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -832,7 +832,7 @@ fn update_map_blank() {
 
 #[test]
 fn update_map_missing_name_and_amount() {
-    match parse("update_map 1").unwrap_err().kind() {
+    match parse("update_map 1".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -840,7 +840,7 @@ fn update_map_missing_name_and_amount() {
 
 #[test]
 fn update_map_missing_amount() {
-    match parse("update_map 1 foobar").unwrap_err().kind() {
+    match parse("update_map 1 foobar".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -848,7 +848,7 @@ fn update_map_missing_amount() {
 
 #[test]
 fn update_map_nonnumeric_amount() {
-    match parse("update_map 1 foobar lol").unwrap_err().kind() {
+    match parse("update_map 1 foobar lol".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -856,7 +856,7 @@ fn update_map_nonnumeric_amount() {
 
 #[test]
 fn update_map_nonnumeric_id() {
-    match parse("update_map so foobar 3").unwrap_err().kind() {
+    match parse("update_map so foobar 3".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -864,7 +864,7 @@ fn update_map_nonnumeric_id() {
 
 #[test]
 fn update_map_proper() {
-    match parse("update_map 1 truck 4").unwrap() {
+    match parse("update_map 1 truck 4".to_owned()).unwrap() {
         Message::UpdateMap(value) => assert_eq!(value, vec!((1, "truck".to_owned(), 4))),
         _ => panic!("didn't get an update_map object")
     }
@@ -872,7 +872,7 @@ fn update_map_proper() {
 
 #[test]
 fn update_map_proper_multiple() {
-    match parse("update_map 1 truck 4 2 train 8").unwrap() {
+    match parse("update_map 1 truck 4 2 train 8".to_owned()).unwrap() {
         Message::UpdateMap(value) => assert_eq!(
             value,
             vec!((1, "truck".to_owned(), 4), (2, "train".to_owned(), 8))
@@ -883,7 +883,7 @@ fn update_map_proper_multiple() {
 
 #[test]
 fn opponent_moves_blank() {
-    match parse("opponent_moves").unwrap() {
+    match parse("opponent_moves".to_owned()).unwrap() {
         Message::OpponentMoves(value) => {
             assert_eq!(value.len(), 0)
         },
@@ -893,7 +893,7 @@ fn opponent_moves_blank() {
 
 #[test]
 fn opponent_moves_missing_type() {
-    match parse("opponent_moves name").unwrap_err().kind() {
+    match parse("opponent_moves name".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -901,7 +901,7 @@ fn opponent_moves_missing_type() {
 
 #[test]
 fn opponent_moves_unknown_type() {
-    match parse("opponent_moves name merf").unwrap_err().kind() {
+    match parse("opponent_moves name merf".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -909,7 +909,7 @@ fn opponent_moves_unknown_type() {
 
 #[test]
 fn opponent_moves_place_armies_missing_region() {
-    match parse("opponent_moves name place_armies").unwrap_err().kind() {
+    match parse("opponent_moves name place_armies".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -917,7 +917,7 @@ fn opponent_moves_place_armies_missing_region() {
 
 #[test]
 fn opponent_moves_place_armies_nonnumeric_region() {
-    match parse("opponent_moves name place_armies wilma").unwrap_err().kind() {
+    match parse("opponent_moves name place_armies wilma".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -925,7 +925,7 @@ fn opponent_moves_place_armies_nonnumeric_region() {
 
 #[test]
 fn opponent_moves_place_armies_missing_value() {
-    match parse("opponent_moves name place_armies").unwrap_err().kind() {
+    match parse("opponent_moves name place_armies".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -933,7 +933,7 @@ fn opponent_moves_place_armies_missing_value() {
 
 #[test]
 fn opponent_moves_place_armies_nonnumeric_value() {
-    match parse("opponent_moves name place_armies 1 wilma").unwrap_err().kind() {
+    match parse("opponent_moves name place_armies 1 wilma".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -941,7 +941,7 @@ fn opponent_moves_place_armies_nonnumeric_value() {
 
 #[test]
 fn opponent_moves_place_armies_proper() {
-    match parse("opponent_moves name place_armies 4 5").unwrap() {
+    match parse("opponent_moves name place_armies 4 5".to_owned()).unwrap() {
         Message::OpponentMoves(value) => {
             let mut iter = value.into_iter();
             let first_move = iter.next().unwrap();
@@ -960,7 +960,7 @@ fn opponent_moves_place_armies_proper() {
 
 #[test]
 fn opponent_moves_place_armies_proper_multiple() {
-    match parse("opponent_moves player2 place_armies 4 5 player2 place_armies 7 9").unwrap() {
+    match parse("opponent_moves player2 place_armies 4 5 player2 place_armies 7 9".to_owned()).unwrap() {
         Message::OpponentMoves(value) => {
             let mut iter = value.into_iter();
             match iter.next().unwrap() {
@@ -986,7 +986,7 @@ fn opponent_moves_place_armies_proper_multiple() {
 
 #[test]
 fn opponent_moves_attack_transfer_missing_source_region() {
-    match parse("opponent_moves name attack/transfer").unwrap_err().kind() {
+    match parse("opponent_moves name attack/transfer".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -994,7 +994,7 @@ fn opponent_moves_attack_transfer_missing_source_region() {
 
 #[test]
 fn opponent_moves_attack_transfer_nonnumeric_source_region() {
-    match parse("opponent_moves name attack/transfer wilma").unwrap_err().kind() {
+    match parse("opponent_moves name attack/transfer wilma".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1002,7 +1002,7 @@ fn opponent_moves_attack_transfer_nonnumeric_source_region() {
 
 #[test]
 fn opponent_moves_attack_transfer_missing_target_region() {
-    match parse("opponent_moves name attack/transfer 1").unwrap_err().kind() {
+    match parse("opponent_moves name attack/transfer 1".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1010,7 +1010,7 @@ fn opponent_moves_attack_transfer_missing_target_region() {
 
 #[test]
 fn opponent_moves_attack_transfer_nonnumeric_target_region() {
-    match parse("opponent_moves name attack/transfer 2 baz").unwrap_err().kind() {
+    match parse("opponent_moves name attack/transfer 2 baz".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1018,7 +1018,7 @@ fn opponent_moves_attack_transfer_nonnumeric_target_region() {
 
 #[test]
 fn opponent_moves_attack_transfer_missing_value() {
-    match parse("opponent_moves name attack/transfer 1 2").unwrap_err().kind() {
+    match parse("opponent_moves name attack/transfer 1 2".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1026,7 +1026,7 @@ fn opponent_moves_attack_transfer_missing_value() {
 
 #[test]
 fn opponent_moves_attack_transfer_nonnumeric_value() {
-    match parse("opponent_moves name attack/transfer 3 4 betty").unwrap_err().kind() {
+    match parse("opponent_moves name attack/transfer 3 4 betty".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1034,7 +1034,7 @@ fn opponent_moves_attack_transfer_nonnumeric_value() {
 
 #[test]
 fn opponent_moves_attack_transfer_proper() {
-    match parse("opponent_moves name attack/transfer 4 5 6").unwrap() {
+    match parse("opponent_moves name attack/transfer 4 5 6".to_owned()).unwrap() {
         Message::OpponentMoves(value) => {
             let mut iter = value.into_iter();
             let first_move = iter.next().unwrap();
@@ -1054,7 +1054,7 @@ fn opponent_moves_attack_transfer_proper() {
 
 #[test]
 fn opponent_moves_attack_transfer_proper_multiple() {
-    match parse("opponent_moves player2 attack/transfer 4 5 6 player2 attack/transfer 7 9 11").unwrap() {
+    match parse("opponent_moves player2 attack/transfer 4 5 6 player2 attack/transfer 7 9 11".to_owned()).unwrap() {
         Message::OpponentMoves(value) => {
             let mut iter = value.into_iter();
             match iter.next().unwrap() {
@@ -1082,7 +1082,7 @@ fn opponent_moves_attack_transfer_proper_multiple() {
 
 #[test]
 fn opponent_moves_attack_transfer_place_armies_proper() {
-    match parse("opponent_moves player2 attack/transfer 4 5 6 player2 place_armies 7 9").unwrap() {
+    match parse("opponent_moves player2 attack/transfer 4 5 6 player2 place_armies 7 9".to_owned()).unwrap() {
         Message::OpponentMoves(value) => {
             let mut iter = value.into_iter();
             match iter.next().unwrap() {
@@ -1109,7 +1109,7 @@ fn opponent_moves_attack_transfer_place_armies_proper() {
 
 #[test]
 fn opponent_moves_place_armies_attack_transfer_proper() {
-    match parse("opponent_moves player2 place_armies 7 9 player2 attack/transfer 4 5 6").unwrap() {
+    match parse("opponent_moves player2 place_armies 7 9 player2 attack/transfer 4 5 6".to_owned()).unwrap() {
         Message::OpponentMoves(value) => {
             let mut iter = value.into_iter();
             match iter.next().unwrap() {
@@ -1136,7 +1136,7 @@ fn opponent_moves_place_armies_attack_transfer_proper() {
 
 #[test]
 fn pick_starting_region_blank() {
-    match parse("pick_starting_region").unwrap_err().kind() {
+    match parse("pick_starting_region".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1144,7 +1144,7 @@ fn pick_starting_region_blank() {
 
 #[test]
 fn pick_starting_region_missing_region() {
-    match parse("pick_starting_region 1000").unwrap_err().kind() {
+    match parse("pick_starting_region 1000".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1152,7 +1152,7 @@ fn pick_starting_region_missing_region() {
 
 #[test]
 fn pick_starting_region_nonnumeric_time() {
-    match parse("pick_starting_region tenseconds").unwrap_err().kind() {
+    match parse("pick_starting_region tenseconds".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1160,7 +1160,7 @@ fn pick_starting_region_nonnumeric_time() {
 
 #[test]
 fn pick_starting_region_nonnumeric_region() {
-    match parse("pick_starting_region 100 tenseconds").unwrap_err().kind() {
+    match parse("pick_starting_region 100 tenseconds".to_owned()).unwrap_err().kind() {
         ErrorKind::MalformedCommand => {},
         _ => panic!("got an error of unexpected kind")
     }
@@ -1168,7 +1168,7 @@ fn pick_starting_region_nonnumeric_region() {
 
 #[test]
 fn pick_starting_region_proper() {
-    match parse("pick_starting_region 100 1").unwrap() {
+    match parse("pick_starting_region 100 1".to_owned()).unwrap() {
         Message::PickStartingRegion(time, value) => {
             assert_eq!(time, 100);
             assert_eq!(value, vec!(1));
@@ -1179,7 +1179,7 @@ fn pick_starting_region_proper() {
 
 #[test]
 fn pick_starting_region_proper_multiple() {
-    match parse("pick_starting_region 283 5 8").unwrap() {
+    match parse("pick_starting_region 283 5 8".to_owned()).unwrap() {
         Message::PickStartingRegion(time, value) => {
             assert_eq!(time, 283);
             assert_eq!(value, vec![5, 8]);
