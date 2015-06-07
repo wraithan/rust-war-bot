@@ -1,4 +1,3 @@
-
 #[macro_use]
 pub mod errors;
 
@@ -10,12 +9,13 @@ pub type ParseResult<T> = Result<T, ParseError>;
 
 #[derive(Debug)]
 pub enum Message {
-    Settings(SettingsValue),
     SetupMap(SetupMapValue),
-    PickStartingRegion{time_left: u64, ids: Vec<u64>},
-    UpdateMap,
-    GoPlaceArmies,
-    GoAttackTranser,
+    Settings(SettingsValue),
+    UpdateMap(Vec<(u64, String, u64)>),
+    OpponentMoves(Vec<OpponentMoveValue>),
+    PickStartingRegion(u64, Vec<u64>),
+    GoPlaceArmies(u64),
+    GoAttackTransfer(u64),
 }
 
 #[derive(Debug)]
@@ -39,11 +39,21 @@ pub enum SetupMapValue {
     OpponentStartingRegions(Vec<u64>)
 }
 
+#[derive(Debug)]
+pub enum OpponentMoveValue {
+    PlaceArmies(String, u64, u64),
+    AttackTransfer(String, u64, u64, u64),
+}
+
 pub fn parse(line: &'static str) -> ParseResult<Message> {
     let mut words = line.trim().split(' ');
     match words.next().unwrap() {
-        "settings" => parse_settings(words),
         "setup_map" => parse_setup_map(words),
+        "settings" => parse_settings(words),
+        "update_map" => parse_update_map(words),
+        "opponent_moves" => parse_opponent_moves(words),
+        "pick_starting_region" => parse_pick_starting_region(words),
+        "go" => parse_go(words),
         _ => fail!((ErrorKind::UnknownCommand, "Got an unknown command", line.to_owned()))
     }
 }
@@ -139,7 +149,82 @@ fn parse_setup_map(mut parts: str::Split<char>) -> ParseResult<Message> {
             let value = try!(parts_to_u64_vector(parts));
             Ok(Message::SetupMap(SetupMapValue::OpponentStartingRegions(value)))
         }
-        _ => fail!((ErrorKind::UnknownCommand, "got an unknown setting type", command.to_owned()))
+        _ => fail!((ErrorKind::UnknownCommand, "got an unknown setup_map type", command.to_owned()))
+    }
+}
+
+fn parse_update_map(mut parts: str::Split<char>) -> ParseResult<Message> {
+    let args: Vec<_> = parts.collect();
+
+    if args.len() == 0 {
+        fail!((
+            ErrorKind::MalformedCommand,
+            "Got update_map without any arguments"
+        ))
+    }
+
+    let mut value = Vec::new();
+
+    for triplet in args.chunks(3) {
+        if triplet.len() < 3 {
+            fail!((
+                ErrorKind::MalformedCommand,
+                "Got update_map without all three parts"
+            ))
+        }
+        value.push((
+            try!(u64::from_str_radix(triplet.get(0).unwrap(), 10)),
+            triplet.get(1).unwrap().to_string(),
+            try!(u64::from_str_radix(triplet.get(2).unwrap(), 10))
+        ));
+    }
+    Ok(Message::UpdateMap(value))
+}
+
+fn parse_opponent_moves(mut parts: str::Split<char>) -> ParseResult<Message> {
+    let mut value = Vec::new();
+
+    loop {
+        match parts.next() {
+            Some(name) => {
+                let command = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "opponent_moves missing type")));
+                match command {
+                    "attack/transfer" => {
+                        value.push(try!(parts_to_attack_transfer(name.to_string(), &mut parts)))
+                    }
+                    "place_armies" => {
+                        value.push(try!(parts_to_place_armies(name.to_string(), &mut parts)))
+                    }
+                    _ => fail!((ErrorKind::MalformedCommand, "opponent_moves unknown type"))
+                }
+            }
+            None => break
+        }
+    }
+
+    Ok(Message::OpponentMoves(value))
+}
+
+fn parse_pick_starting_region(mut parts: str::Split<char>) -> ParseResult<Message> {
+    let raw_time = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "Got go without type")));
+    let timebank = try!(u64::from_str_radix(raw_time, 10));
+    let value = try!(parts_to_u64_vector(parts));
+    Ok(Message::PickStartingRegion(timebank, value))
+}
+
+fn parse_go(mut parts: str::Split<char>) -> ParseResult<Message> {
+    let command = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "Got setup_map without type")));
+
+    match command {
+        "place_armies" => {
+            let value = try!(parts_to_u64(parts, "go place_armies".to_owned()));
+            Ok(Message::GoPlaceArmies(value))
+        }
+        "attack/transfer" => {
+            let value = try!(parts_to_u64(parts, "go attack/transfer".to_owned()));
+            Ok(Message::GoAttackTransfer(value))
+        }
+        _ => fail!((ErrorKind::UnknownCommand, "got an unknown go type", command.to_owned()))
     }
 }
 
@@ -187,6 +272,28 @@ fn parts_to_pair_vector(parts: str::Split<char>)  -> ParseResult<Vec<(u64, u64)>
         ));
     }
     Ok(value)
+}
+
+fn parts_to_attack_transfer(name: String, parts: &mut str::Split<char>) -> ParseResult<OpponentMoveValue> {
+    let raw_source = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "opponent_moves source")));
+    let raw_target = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "opponent_moves target")));
+    let raw_armies = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "opponent_moves armies")));
+    Ok(OpponentMoveValue::AttackTransfer(
+        name,
+        try!(u64::from_str_radix(raw_source, 10)),
+        try!(u64::from_str_radix(raw_target, 10)),
+        try!(u64::from_str_radix(raw_armies, 10)),
+    ))
+}
+
+fn parts_to_place_armies(name: String, parts: &mut str::Split<char>) -> ParseResult<OpponentMoveValue> {
+    let raw_target = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "opponent_moves target")));
+    let raw_armies = try!(parts.next().ok_or((ErrorKind::MalformedCommand, "opponent_moves armies")));
+    Ok(OpponentMoveValue::PlaceArmies(
+        name,
+        try!(u64::from_str_radix(raw_target, 10)),
+        try!(u64::from_str_radix(raw_armies, 10)),
+    ))
 }
 
 #[test]
@@ -656,5 +763,427 @@ fn setup_map_neighbors_multiple_proper() {
             _ => panic!("got a setup_map value that wasn't a region")
         },
         _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn go_blank() {
+    match parse("go").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn go_place_armies_blank() {
+    match parse("go place_armies").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn go_place_armies_nonnumeric() {
+    match parse("go place_armies samwise").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn go_place_armies_proper() {
+    match parse("go place_armies 100").unwrap() {
+        Message::GoPlaceArmies(timebank) => assert_eq!(timebank, 100),
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn go_attack_transfer_blank() {
+    match parse("go attack/transfer").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn go_attack_transfer_nonnumeric() {
+    match parse("go attack/transfer frodo").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn go_attack_transfer_proper() {
+    match parse("go attack/transfer 100").unwrap() {
+        Message::GoAttackTransfer(timebank) => assert_eq!(timebank, 100),
+        _ => panic!("didn't get a setup_map object")
+    }
+}
+
+#[test]
+fn update_map_blank() {
+    match parse("update_map").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn update_map_missing_name_and_amount() {
+    match parse("update_map 1").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn update_map_missing_amount() {
+    match parse("update_map 1 foobar").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn update_map_nonnumeric_amount() {
+    match parse("update_map 1 foobar lol").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn update_map_nonnumeric_id() {
+    match parse("update_map so foobar 3").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn update_map_proper() {
+    match parse("update_map 1 truck 4").unwrap() {
+        Message::UpdateMap(value) => assert_eq!(value, vec!((1, "truck".to_owned(), 4))),
+        _ => panic!("didn't get an update_map object")
+    }
+}
+
+#[test]
+fn update_map_proper_multiple() {
+    match parse("update_map 1 truck 4 2 train 8").unwrap() {
+        Message::UpdateMap(value) => assert_eq!(
+            value,
+            vec!((1, "truck".to_owned(), 4), (2, "train".to_owned(), 8))
+        ),
+        _ => panic!("didn't get an update_map object")
+    }
+}
+
+#[test]
+fn opponent_moves_blank() {
+    match parse("opponent_moves").unwrap() {
+        Message::OpponentMoves(value) => {
+            assert_eq!(value.len(), 0)
+        },
+        _ => panic!("didn't get an opponent_moves object")
+    }
+}
+
+#[test]
+fn opponent_moves_missing_type() {
+    match parse("opponent_moves name").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_unknown_type() {
+    match parse("opponent_moves name merf").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_place_armies_missing_region() {
+    match parse("opponent_moves name place_armies").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_place_armies_nonnumeric_region() {
+    match parse("opponent_moves name place_armies wilma").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_place_armies_missing_value() {
+    match parse("opponent_moves name place_armies").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_place_armies_nonnumeric_value() {
+    match parse("opponent_moves name place_armies 1 wilma").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_place_armies_proper() {
+    match parse("opponent_moves name place_armies 4 5").unwrap() {
+        Message::OpponentMoves(value) => {
+            let mut iter = value.into_iter();
+            let first_move = iter.next().unwrap();
+            match first_move {
+                OpponentMoveValue::PlaceArmies(player, region, value) => {
+                    assert_eq!(player, "name".to_owned());
+                    assert_eq!(region, 4);
+                    assert_eq!(value, 5);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+        }
+        _ => panic!("didn't get an opponent_moves object")
+    }
+}
+
+#[test]
+fn opponent_moves_place_armies_proper_multiple() {
+    match parse("opponent_moves player2 place_armies 4 5 player2 place_armies 7 9").unwrap() {
+        Message::OpponentMoves(value) => {
+            let mut iter = value.into_iter();
+            match iter.next().unwrap() {
+                OpponentMoveValue::PlaceArmies(player, region, value) => {
+                    assert_eq!(player, "player2".to_owned());
+                    assert_eq!(region, 4);
+                    assert_eq!(value, 5);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+            match iter.next().unwrap() {
+                OpponentMoveValue::PlaceArmies(player, region, value) => {
+                    assert_eq!(player, "player2".to_owned());
+                    assert_eq!(region, 7);
+                    assert_eq!(value, 9);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+        }
+        _ => panic!("didn't get an opponent_moves object")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_missing_source_region() {
+    match parse("opponent_moves name attack/transfer").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_nonnumeric_source_region() {
+    match parse("opponent_moves name attack/transfer wilma").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_missing_target_region() {
+    match parse("opponent_moves name attack/transfer 1").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_nonnumeric_target_region() {
+    match parse("opponent_moves name attack/transfer 2 baz").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_missing_value() {
+    match parse("opponent_moves name attack/transfer 1 2").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_nonnumeric_value() {
+    match parse("opponent_moves name attack/transfer 3 4 betty").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_proper() {
+    match parse("opponent_moves name attack/transfer 4 5 6").unwrap() {
+        Message::OpponentMoves(value) => {
+            let mut iter = value.into_iter();
+            let first_move = iter.next().unwrap();
+            match first_move {
+                OpponentMoveValue::AttackTransfer(player, source, target, value) => {
+                    assert_eq!(player, "name".to_owned());
+                    assert_eq!(source, 4);
+                    assert_eq!(target, 5);
+                    assert_eq!(value, 6);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+        }
+        _ => panic!("didn't get an opponent_moves object")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_proper_multiple() {
+    match parse("opponent_moves player2 attack/transfer 4 5 6 player2 attack/transfer 7 9 11").unwrap() {
+        Message::OpponentMoves(value) => {
+            let mut iter = value.into_iter();
+            match iter.next().unwrap() {
+                OpponentMoveValue::AttackTransfer(player, source, target, value) => {
+                    assert_eq!(player, "player2".to_owned());
+                    assert_eq!(source, 4);
+                    assert_eq!(target, 5);
+                    assert_eq!(value, 6);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+            match iter.next().unwrap() {
+                OpponentMoveValue::AttackTransfer(player, source, target, value) => {
+                    assert_eq!(player, "player2".to_owned());
+                    assert_eq!(source, 7);
+                    assert_eq!(target, 9);
+                    assert_eq!(value, 11);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+        }
+        _ => panic!("didn't get an opponent_moves object")
+    }
+}
+
+#[test]
+fn opponent_moves_attack_transfer_place_armies_proper() {
+    match parse("opponent_moves player2 attack/transfer 4 5 6 player2 place_armies 7 9").unwrap() {
+        Message::OpponentMoves(value) => {
+            let mut iter = value.into_iter();
+            match iter.next().unwrap() {
+                OpponentMoveValue::AttackTransfer(player, source, target, value) => {
+                    assert_eq!(player, "player2".to_owned());
+                    assert_eq!(source, 4);
+                    assert_eq!(target, 5);
+                    assert_eq!(value, 6);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+            match iter.next().unwrap() {
+                OpponentMoveValue::PlaceArmies(player, region, value) => {
+                    assert_eq!(player, "player2".to_owned());
+                    assert_eq!(region, 7);
+                    assert_eq!(value, 9);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+        }
+        _ => panic!("didn't get an opponent_moves object")
+    }
+}
+
+#[test]
+fn opponent_moves_place_armies_attack_transfer_proper() {
+    match parse("opponent_moves player2 place_armies 7 9 player2 attack/transfer 4 5 6").unwrap() {
+        Message::OpponentMoves(value) => {
+            let mut iter = value.into_iter();
+            match iter.next().unwrap() {
+                OpponentMoveValue::PlaceArmies(player, region, value) => {
+                    assert_eq!(player, "player2".to_owned());
+                    assert_eq!(region, 7);
+                    assert_eq!(value, 9);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+            match iter.next().unwrap() {
+                OpponentMoveValue::AttackTransfer(player, source, target, value) => {
+                    assert_eq!(player, "player2".to_owned());
+                    assert_eq!(source, 4);
+                    assert_eq!(target, 5);
+                    assert_eq!(value, 6);
+                }
+                _ => panic!("didn't get the expected opponent_moves type")
+            }
+        }
+        _ => panic!("didn't get an opponent_moves object")
+    }
+}
+
+#[test]
+fn pick_starting_region_blank() {
+    match parse("pick_starting_region").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn pick_starting_region_missing_region() {
+    match parse("pick_starting_region 1000").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn pick_starting_region_nonnumeric_time() {
+    match parse("pick_starting_region tenseconds").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn pick_starting_region_nonnumeric_region() {
+    match parse("pick_starting_region 100 tenseconds").unwrap_err().kind() {
+        ErrorKind::MalformedCommand => {},
+        _ => panic!("got an error of unexpected kind")
+    }
+}
+
+#[test]
+fn pick_starting_region_proper() {
+    match parse("pick_starting_region 100 1").unwrap() {
+        Message::PickStartingRegion(time, value) => {
+            assert_eq!(time, 100);
+            assert_eq!(value, vec!(1));
+        }
+        _ => panic!("didn't get an opponent_moves object")
+    }
+}
+
+#[test]
+fn pick_starting_region_proper_multiple() {
+    match parse("pick_starting_region 283 5 8").unwrap() {
+        Message::PickStartingRegion(time, value) => {
+            assert_eq!(time, 283);
+            assert_eq!(value, vec![5, 8]);
+        }
+        _ => panic!("didn't get an opponent_moves object")
     }
 }
