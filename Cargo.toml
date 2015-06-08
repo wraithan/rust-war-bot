@@ -8,6 +8,7 @@ include = ["src/**/*", "Cargo.toml", "tests/**/*"]
 [dependencies]
 log = "*"
 env_logger = "*"
+rand = "*"
 
 [build-dependencies]
 glob = "*"
