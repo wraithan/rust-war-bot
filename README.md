@@ -1,17 +1,28 @@
-# rust-war-bot
+# warlight-starterbot-rust
 
-This is to be my next generation entry into the [Warlight 2 AI Challenge](http://theaigames.com/competitions/warlight-ai-challenge-2). Once I have a bot working, I'll split out the base framework needed to get going and submit it to [The AI Games](http://theaigames.com).
+This is a monte carlo bot that includes the whole framework to get going with rust and theaigames.com Warlight 2 challenge.
 
-I'll be exploring various techniques in rust while I build this out. As this may end up being the first project I finish in rust.
+## building
 
-## tests
+This is built as a standard rust project.
 
-This bot uses the same framework as my other bot [ZenWarBot](https://github.com/wraithan/zenwarbot) which was pioneered by [Curious Attempt Bunny](http://curiousattemptbunny.com/) in his [Clojure Bot]((https://github.com/curious-attempt-bunny/warlight2-starterbot-clojure)). You can find the spec for them [here](https://github.com/curious-attempt-bunny/warlight2-starterbot-clojure#create-new-tests).
+```
+cargo build --release
+```
+
+This creates a binary `./target/release/warbot` which is what should be run as the bot in the tournament.
+
+## api docs
+
+I need to write these and until then this wont be a good starter bot. But it should be good enough to get rust accepted on the platform.
+
+## testing
+
+The integration tests include markup a framework that my other bot [ZenWarBot](https://github.com/wraithan/zenwarbot) uses which was pioneered by [Curious Attempt Bunny](http://curiousattemptbunny.com/) in his [Clojure Bot]((https://github.com/curious-attempt-bunny/warlight2-starterbot-clojure)). You can find the spec for them [here](https://github.com/curious-attempt-bunny/warlight2-starterbot-clojure#create-new-tests).
+
+I didn't fully implement it yet, my rust bot [rust-war-bot](https://github.com/wraithan/rust-war-bot) will have a more complete implementation to pull things from.
 
 ## license
 
 [ISC](http://en.wikipedia.org/wiki/ISC_license)
 
-## using my bot
-
-I ask that if you do base your bot off mine, that you strip some/most of the logic out and build up your own. Pulling mine, making and incremental change and resubmitting it would be a bit lame. I am leaving it open source for others to learn how I structure it, since rust is a newer language and we could all use as much help as we can get.
