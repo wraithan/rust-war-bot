@@ -1,4 +1,4 @@
-extern crate warbot;
+extern crate warlib;
 
 #[macro_use]
 extern crate log;
@@ -11,7 +11,7 @@ fn main() {
     env::set_var("RUST_LOG", "info");
     env_logger::init().unwrap();
     info!("Started up. System is {} bit.", std::mem::size_of::<usize>()*8);
-    let (tx, rx) = warbot::Bot::spawn();
+    let (tx, rx) = warlib::Bot::spawn();
 
     let stdin = std::io::stdin();
     for line in stdin.lock().lines() {

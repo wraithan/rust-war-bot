@@ -1,3 +1,29 @@
+//! theaigames.org Warlight Challenge 2 parser.
+//!
+//! This is a simple parser built to take theaigames.org warlight challenge 2
+//! protocol and turn it into typed messages.
+//!
+//! `parse()` takes a `String` that it will parse as a single line of input and
+//! returns a `Result` The parser does no line splitting, that is left to the
+//! user.
+//!
+//! In the standard case you'll be reading from `stdin` and putting that through
+//! the parser, an example would look like this:
+//!
+//! ```
+//! use std::io::BufRead;
+//! use warlib::parser::parse;
+//!
+//! let stdin = std::io::stdin();
+//! for line in stdin.lock().lines() {
+//!     if let Ok(message) = parse(line.unwrap().to_owned()) {
+//!         // bot logic here
+//!     }
+//! }
+//! ```
+//!
+
+
 #[macro_use]
 pub mod errors;
 

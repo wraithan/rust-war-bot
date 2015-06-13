@@ -1,4 +1,4 @@
-extern crate warbot;
+extern crate warlib;
 
 use std::fs::File;
 use std::io::Read;
@@ -24,19 +24,14 @@ fn run_file(name: &str) {
         let line = raw_line.trim().to_owned();
         if line.len() == 0 {
             continue;
-        }
-        if line.starts_with("Output") {
+        } else if line.starts_with("Output") {
             continue;
-        }
-        if line.starts_with("Round") {
+        } else if line.starts_with("Round") {
             continue;
-        }
-        if line.starts_with("#") {
+        } else if line.starts_with("#") {
             continue;
-        }
-        match warbot::parser::parse(line) {
-            Ok(_) => {},
-            Err(e) => panic!("{:?}", e)
+        } else if let Err(e) = warlib::parser::parse(line) {
+            panic!("{:?}", e)
         }
     }
 }

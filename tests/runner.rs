@@ -2,7 +2,7 @@
 extern crate log;
 extern crate env_logger;
 
-extern crate warbot;
+extern crate warlib;
 
 use std::env;
 use std::fs::File;
@@ -17,7 +17,7 @@ static START: Once = ONCE_INIT;
 
 fn run_file(name: &str) {
     START.call_once(|| {
-        env::set_var("RUST_LOG", "info");
+        env::set_var("RUST_LOG", "warn");
         env_logger::init().unwrap();
     });
 
@@ -31,7 +31,7 @@ fn run_file(name: &str) {
         },
         Ok(f) => f
     };
-    let (tx, rx) = warbot::Bot::spawn();
+    let (tx, rx) = warlib::Bot::spawn();
 
     let mut last = String::new();
 

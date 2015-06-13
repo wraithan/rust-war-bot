@@ -1,9 +1,13 @@
 [package]
-name = "warbot"
+name = "warlib"
 version = "0.1.0"
 authors = ["Wraithan (Chris McDonald) <xwraithanx@gmail.com>"]
 build = "build.rs"
 include = ["src/**/*", "Cargo.toml", "tests/**/*"]
+
+[[bin]]
+name = "warbot"
+doc = false
 
 [dependencies]
 log = "*"

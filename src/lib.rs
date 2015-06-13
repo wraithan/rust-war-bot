@@ -186,7 +186,7 @@ impl Bot {
     }
 
     fn process_setting_buffer(&mut self) {
-        let mut settings = Settings{
+        let settings = Settings{
             timebank: 0,
             time_per_move: 0,
             max_rounds: 0,
@@ -206,7 +206,7 @@ impl Bot {
     }
 
     fn process_settings(&mut self, message: SettingsValue) {
-        let mut settings = self.settings.as_mut().unwrap();
+        let settings = self.settings.as_mut().unwrap();
 
         match message {
             SettingsValue::Timebank(time) => settings.timebank = time,
