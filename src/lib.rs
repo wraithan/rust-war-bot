@@ -10,8 +10,7 @@ use parser::{Message, SettingsValue, SetupMapValue, OpponentMoveValue, parse};
 use rand::{thread_rng, sample};
 
 pub struct Bot {
-    settings: Option<Settings>,
-    setting_buffer: Vec<parser::SettingsValue>,
+    settings: Settings,
     map: map::GameMap,
     output: Sender<String>,
     output_buffer: String
@@ -48,9 +47,19 @@ impl Bot {
     }
 
     fn new(output: Sender<String>) -> Bot {
+        let settings = Settings{
+            timebank: 0,
+            time_per_move: 0,
+            max_rounds: 0,
+            name: "default".to_owned(),
+            opponent: "default".to_owned(),
+            starting_regions: Vec::new(),
+            starting_pick_amount: 0,
+            starting_armies: 0
+        };
+
         Bot {
-            settings: None,
-            setting_buffer: Vec::with_capacity(10),
+            settings: settings,
             map: map::GameMap::new(),
             output: output,
             output_buffer: String::new(),
@@ -67,11 +76,7 @@ impl Bot {
             Ok(message) => match message {
                 Message::SetupMap(map_message) => self.process_map_message(map_message),
                 Message::Settings(setting) => {
-                    if self.settings.is_none() {
-                        self.setting_buffer.push(setting);
-                    } else {
-                        self.process_settings(setting);
-                    }
+                    self.process_settings(setting);
                 },
                 Message::UpdateMap(regions) => {
                     let mut found = Vec::new();
@@ -95,33 +100,36 @@ impl Bot {
                     }
                 },
                 Message::PickStartingRegion(_, regions) => {
-                    if !self.setting_buffer.is_empty() {
-                        self.process_setting_buffer();
+                    let mut best = 0.0;
+                    let mut choice = 0;
+                    for id in regions.iter() {
+                        let current = self.map.starting_pick_value(id);
+                        if current > best {
+                            best = current;
+                            choice = *id;
+                        }
                     }
-                    let mut rng = thread_rng();
-                    let choices = sample(&mut rng, regions.iter(), 1);
-                    let response = format!("{}", choices.get(0).unwrap());
+
+                    let response = format!("{}", choice);
                     self.output_buffer = self.queue(response);
                 },
                 Message::GoPlaceArmies(_) => {
                     let regions = self.map.allies();
-                    let settings = self.settings.as_ref().unwrap();
                     let mut rng = thread_rng();
-                    let choices = sample(&mut rng, regions.iter(), settings.starting_armies as usize);
+                    let choices = sample(&mut rng, regions.iter(), self.settings.starting_armies as usize);
                     for region in choices {
-                        let response = format!("{} place_armies {} {}", settings.name, region.id, 1);
+                        let response = format!("{} place_armies {} {}", self.settings.name, region.id, 1);
                         self.output_buffer = self.queue(response);
                     }
                 },
                 Message::GoAttackTransfer(_) => {
                     let regions = self.map.allies();
-                    let settings = self.settings.as_ref().unwrap();
                     let mut rng = thread_rng();
                     for region in regions {
                         if region.armies >= 4 {
                             let choices = sample(&mut rng, region.neighbor_ids.iter(), 1);
                             if let Some(target) = choices.get(0) {
-                                let response = format!("{} attack/transfer {} {} {}", settings.name, region.id, target, 3);
+                                let response = format!("{} attack/transfer {} {} {}", self.settings.name, region.id, target, 3);
                                 self.output_buffer = self.queue(response);
                             }
                         }
@@ -185,46 +193,23 @@ impl Bot {
         }
     }
 
-    fn process_setting_buffer(&mut self) {
-        let settings = Settings{
-            timebank: 0,
-            time_per_move: 0,
-            max_rounds: 0,
-            name: "default".to_owned(),
-            opponent: "default".to_owned(),
-            starting_regions: Vec::new(),
-            starting_pick_amount: 0,
-            starting_armies: 0
-        };
-
-        self.settings = Some(settings);
-
-        while let Some(message) = self.setting_buffer.pop() {
-            self.process_settings(message);
-        }
-
-    }
-
     fn process_settings(&mut self, message: SettingsValue) {
-        let settings = self.settings.as_mut().unwrap();
-
         match message {
-            SettingsValue::Timebank(time) => settings.timebank = time,
-            SettingsValue::TimePerMove(time) => settings.time_per_move = time,
-            SettingsValue::MaxRounds(rounds) => settings.max_rounds = rounds,
-            SettingsValue::YourBot(name) => settings.name = name,
-            SettingsValue::OpponentBot(name) => settings.opponent = name,
-            SettingsValue::StartingRegions(region_ids) => settings.starting_regions = region_ids,
-            SettingsValue::StartingPickAmount(value) => settings.starting_pick_amount = value,
-            SettingsValue::StartingArmies(value) => settings.starting_armies = value
+            SettingsValue::Timebank(time) => self.settings.timebank = time,
+            SettingsValue::TimePerMove(time) => self.settings.time_per_move = time,
+            SettingsValue::MaxRounds(rounds) => self.settings.max_rounds = rounds,
+            SettingsValue::YourBot(name) => self.settings.name = name,
+            SettingsValue::OpponentBot(name) => self.settings.opponent = name,
+            SettingsValue::StartingRegions(region_ids) => self.settings.starting_regions = region_ids,
+            SettingsValue::StartingPickAmount(value) => self.settings.starting_pick_amount = value,
+            SettingsValue::StartingArmies(value) => self.settings.starting_armies = value
         };
     }
 
     fn name_to_owner_value(&self, name: String) -> Result<map::OwnerValue, &'static str> {
-        let settings = self.settings.as_ref().unwrap();
-        if name == settings.name {
+        if name == self.settings.name {
             Ok(map::OwnerValue::Ally)
-        } else if name == settings.opponent {
+        } else if name == self.settings.opponent {
             Ok(map::OwnerValue::Enemy)
         } else if name == "neutral" {
             Ok(map::OwnerValue::Neutral)

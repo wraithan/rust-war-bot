@@ -39,19 +39,13 @@ fn run_file(name: &str) {
     file.read_to_string(&mut contents).unwrap();
     for raw_line in contents.split('\n') {
         let line = raw_line.trim().to_owned();
-        if line.len() == 0 {
+        if line.len() == 0 || line.starts_with("Output") || line.starts_with("Round"){
             continue;
-        }
-        if line.starts_with("Output") {
-            continue;
-        }
-        if line.starts_with("Round") {
-            continue;
-        }
-        if line.starts_with("#") {
-            continue;
-        }
-        if gets_response(&line) {
+        } else if line.starts_with("#") {
+            if line.starts_with("# Valid") {
+                run_spec(line, &last)
+            }
+        } else if gets_response(&line) {
             tx.send(line).unwrap();
             let timer = set_timer(1000);
             loop {
@@ -63,24 +57,59 @@ fn run_file(name: &str) {
                         }
                         break;
                     },
-                    Err(e) => match e {
-                        TryRecvError::Disconnected => {
-                            panic!("bot crashed")
-                        },
-                        _ => {}
+                    Err(e) => if let TryRecvError::Disconnected = e {
+                        panic!("bot crashed")
                     }
                 }
-                match timer.try_recv() {
-                    Ok(_) => {
-                        panic!("timeout exceeded")
-                    },
-                    Err(_) => {}
+                if let Ok(_) = timer.try_recv() {
+                    panic!("timeout exceeded")
                 }
+
                 std::thread::yield_now()
             }
         } else {
             tx.send(line).unwrap();
         }
+    }
+}
+
+enum TestSpec {
+    Contains(String),
+    ExactlyMatches(String),
+    NotContains(String)
+}
+
+fn run_spec (line: String, last: &String) {
+    let spec = line.trim_left_matches("# Valid: ").to_owned();
+    match parse_spec(spec) {
+        TestSpec::Contains(ref expected) => {
+            if !last.contains(expected) {
+                panic!("Expected {} to contain {}", last, expected);
+            }
+        },
+        TestSpec::ExactlyMatches(ref expected) => assert_eq!(last, expected),
+        TestSpec::NotContains(ref expected) => {
+            if last.contains(expected) {
+                panic!("Expected {} to not contain {}", last, expected);
+            }
+        }
+    };
+}
+
+fn parse_spec (mut spec: String) -> TestSpec {
+    match spec.chars().nth(0).unwrap() {
+        '!' => {
+            spec.remove(0);
+            match parse_spec(spec) {
+                TestSpec::Contains(expected) => TestSpec::NotContains(expected),
+                _ => panic!("Not Implemented")
+            }
+        },
+        '[' => {
+            let container: &[_] = &['[', ']'];
+            TestSpec::Contains(spec.trim_matches(container).to_owned())
+        },
+        _ => TestSpec::ExactlyMatches(spec)
     }
 }
 

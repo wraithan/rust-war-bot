@@ -8,9 +8,9 @@ pub struct GameMap {
 
 #[derive(Debug)]
 pub struct SuperRegion {
-    id: u64,
-    value: u64,
-    region_ids: Vec<u64>
+    pub id: u64,
+    pub value: u64,
+    pub region_ids: Vec<u64>
 }
 
 #[derive(Debug)]
@@ -89,6 +89,19 @@ impl GameMap {
         self.regions.iter()
             .filter_map(|(_, region)| if region.owner == OwnerValue::Ally {Some(region)} else {None})
             .collect()
+    }
+
+    pub fn starting_pick_value(&self, region_id: &u64) -> f64 {
+        let super_region = self.super_regions.get(&self.regions.get(region_id).unwrap().super_region_id).unwrap();
+
+        let mut armies = 0;
+        for (id, region) in self.regions.iter() {
+            if super_region.region_ids.contains(&id) {
+                armies += region.armies;
+            }
+        }
+
+        super_region.value as f64 / (armies) as f64
     }
 }
 
