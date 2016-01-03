@@ -1,4 +1,10 @@
-use map;
+#[macro_use]
+extern crate log;
+extern crate rand;
+
+pub mod map;
+pub mod parser;
+
 use parser::{Message, SettingsValue, SetupMapValue, OpponentMoveValue, parse};
 use rand::{thread_rng, sample};
 use std::sync::mpsc::{Receiver, Sender, channel};
@@ -150,8 +156,8 @@ impl Bot {
     }
 
     fn send(&mut self) {
-        info!("send: '{}'", self.output_buffer);
         if self.output_buffer.len() > 0 {
+            info!("send: '{}'", self.output_buffer);
             let response = self.output_buffer.clone();
             self.output_buffer = String::new();
             self.output.send(response).unwrap();
@@ -213,8 +219,4 @@ impl Bot {
             Err("Unknown name")
         }
     }
-}
-
-pub fn run() {
-    info!("run()!");
 }

@@ -1,19 +1,13 @@
 #[macro_use]
 extern crate log;
-extern crate rand;
 extern crate env_logger;
+extern crate warlib;
 
 use std::env;
 use std::io::BufRead;
 
-mod warlib;
-mod parser;
-mod map;
-
 fn main() {
-    env::set_var("RUST_LOG", "info");
-    env_logger::init().unwrap();
-    info!("Started up. System is {} bit.", std::mem::size_of::<usize>()*8);
+    pre_boot();
     let (tx, rx) = warlib::Bot::spawn();
 
     let stdin = std::io::stdin();
@@ -26,4 +20,10 @@ fn main() {
             println!("{}", response);
         }
     });
+}
+
+fn pre_boot() {
+    env::set_var("RUST_LOG", "info");
+    env_logger::init().unwrap();
+    info!("pre_boot complete!");
 }

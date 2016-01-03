@@ -1,10 +1,15 @@
 [package]
-name = "warbot"
+name = "warlib"
 version = "0.1.0"
 authors = ["Wraithan (Chris McDonald) <xwraithanx@gmail.com>"]
-#include = ["src/**/*", "Cargo.toml", "tests/**/*"]
+build = "build.rs"
 
 [dependencies]
 log = "*"
+rand = "*"
+
+[dev-dependencies]
 env_logger = "*"
-warlib = {path = "warlib"}
+
+[build-dependencies]
+glob = "*"
