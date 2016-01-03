@@ -1,11 +1,14 @@
-extern crate warlib;
-
 #[macro_use]
 extern crate log;
+extern crate rand;
 extern crate env_logger;
 
 use std::env;
 use std::io::BufRead;
+
+mod warlib;
+mod parser;
+mod map;
 
 fn main() {
     env::set_var("RUST_LOG", "info");

@@ -1,13 +1,8 @@
-#[macro_use]
-extern crate log;
-extern crate rand;
-
-pub mod parser;
-pub mod map;
-
-use std::sync::mpsc::{Receiver, Sender, channel};
+use map;
 use parser::{Message, SettingsValue, SetupMapValue, OpponentMoveValue, parse};
 use rand::{thread_rng, sample};
+use std::sync::mpsc::{Receiver, Sender, channel};
+use std::thread;
 
 pub struct Bot {
     settings: Settings,
@@ -34,7 +29,7 @@ impl Bot {
     pub fn spawn() -> (Sender<String>, Receiver<String>) {
         let (input_tx, input_rx) = channel();
         let (output_tx, output_rx) = channel();
-        std::thread::spawn(move || {
+        thread::spawn(move || {
             let mut bot = Bot::new(output_tx);
             loop {
                 match input_rx.try_recv() {
